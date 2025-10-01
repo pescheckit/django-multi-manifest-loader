@@ -3,8 +3,12 @@ name: CI
 on:
   push:
     branches: [ main, develop ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main, develop ]
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -118,13 +122,25 @@ jobs:
     name: Publish to PyPI
     runs-on: ubuntu-latest
     needs: [package]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'release' && github.event.action == 'published'
     environment:
       name: pypi
       url: https://pypi.org/p/django-multi-manifest-loader
     permissions:
       id-token: write  # Required for trusted publishing
     steps:
+    - name: Validate semver tag
+      run: |
+        TAG="${{ github.event.release.tag_name }}"
+        # Remove 'v' prefix if present for validation
+        VERSION="${TAG#v}"
+        if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$ ]]; then
+          echo "Error: Tag '$TAG' is not a valid semantic version"
+          echo "Expected format: v1.2.3, 0.1.0, v1.2.3-alpha.1, or v1.2.3+build.123"
+          exit 1
+        fi
+        echo "✓ Tag '$TAG' is a valid semantic version"
+
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
