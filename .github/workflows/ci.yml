@@ -106,6 +106,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install build twine
 
+    - name: Update version from tag (if release)
+      if: github.event_name == 'release'
+      run: |
+        TAG="${{ github.event.release.tag_name }}"
+        VERSION="${TAG#v}"
+        sed -i 's/version = ".*"/version = "'"$VERSION"'"/' pyproject.toml
+        echo "Updated pyproject.toml version to $VERSION"
+
     - name: Build package
       run: python -m build
 
