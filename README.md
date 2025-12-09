@@ -11,9 +11,17 @@ When using webpack with multiple Django packages (like `righttowork-check`, `cri
 `django-multi-manifest-loader` provides a standalone template tag that:
 1. Loads the main webpack manifest (from your dashboard/main app)
 2. Automatically discovers and loads manifest files from all installed Django packages
-3. Merges them into a single manifest dictionary
-4. Makes all assets available via the `{% manifest %}` template tag
-5. **Zero dependencies** - doesn't rely on unmaintained packages like `django-manifest-loader`
+3. **Namespaces manifests by app** to prevent naming collisions
+4. **Auto-detects the current app** from template context for seamless usage
+5. Makes all assets available via the `{% manifest %}` template tag
+6. **Zero dependencies** - doesn't rely on unmaintained packages like `django-manifest-loader`
+
+### Key Features
+
+- **Automatic Namespacing**: Each app's manifest is namespaced, so `config.js` in `package1` doesn't conflict with `config.js` in `package2`
+- **Smart Auto-Detection**: Automatically uses the correct app's assets based on which template is rendering
+- **Explicit Syntax**: Use `app:asset.js` syntax when you need assets from a specific app
+- **Fallback to Main**: If an asset isn't found in the current app, falls back to the main app's manifest
 
 ## Installation
 
@@ -42,28 +50,55 @@ INSTALLED_APPS = [
 ]
 ```
 
-### 2. Use in Templates
+### 2. Configure (Optional)
 
-Now you can use the `{% manifest %}` tag for assets from any installed package:
+In your `settings.py`:
+
+```python
+DJANGO_MULTI_MANIFEST_LOADER = {
+    'cache': True,  # Enable caching (default: True in production, False in DEBUG)
+    'main_app_name': 'dashboard',  # Name for main app manifests (default: 'main')
+}
+```
+
+### 3. Use in Templates
+
+The manifest tag automatically detects which app's template is rendering and loads the correct assets:
 
 ```django
 {% load manifest %}
 
-{# Main app assets #}
-<script src="{% manifest 'js/scripts.bundle.js' %}"></script>
+{# In package1/templates/package1/form.html #}
+{# Automatically uses package1's manifest #}
+<script src="{% manifest 'config.js' %}"></script>
+{# Returns: package1/js/config.abc123.js #}
 
-{# Package assets with hashed filenames #}
-<script src="{% manifest 'custom/candidate/wizard/multiple-upload.js' %}"></script>
+{# In package2/templates/package2/wizard.html #}
+{# Automatically uses package2's manifest #}
+<script src="{% manifest 'config.js' %}"></script>
+{# Returns: package2/js/config.xyz789.js #}
+
+{# Explicit app syntax - use assets from another app #}
+<script src="{% manifest 'dashboard:main.js' %}"></script>
+{# Always returns dashboard's main.js #}
+
+{# If not found in current app, falls back to main app #}
+<link href="{% manifest 'shared-styles.css' %}" rel="stylesheet">
 ```
 
 ## How It Works
 
-The loader searches for manifest files in all installed Django apps using Django's staticfiles finders:
+The loader searches for manifest files in all installed Django apps and namespaces them by app:
 
-- Main manifest: `manifest.json` (from your webpack build)
-- Package manifests: `*/manifest.json` (e.g., `righttoworkcheck/manifest.json`)
+1. **Discovery**: Finds `manifest.json` files in all Django apps using staticfiles finders
+2. **Namespacing**: Each app's manifest is stored under its app name (e.g., `package1`, `package2`)
+3. **Auto-Detection**: When rendering a template, extracts the app name from the template path (e.g., `package1/form.html` → `package1`)
+4. **Resolution**:
+   - First tries the current app's manifest
+   - Falls back to the main app if not found
+   - Supports explicit `app:key` syntax for cross-app asset references
 
-All manifest entries are merged, so you can reference any asset by its original key, and the loader returns the hashed filename.
+**Result**: No naming collisions! Each app's `config.js` is kept separate.
 
 ## Package Manifest Example
 
@@ -105,6 +140,10 @@ DJANGO_MULTI_MANIFEST_LOADER = {
     # Default: True in production (not DEBUG), False in DEBUG mode
     'cache': True,
 
+    # Name for main app manifests (manifests not tied to a specific app)
+    # Default: 'main'
+    'main_app_name': 'dashboard',
+
     # Enable debug logging to see which manifests are loaded
     # Default: False
     'debug': False,
@@ -116,6 +155,7 @@ DJANGO_MULTI_MANIFEST_LOADER = {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `cache` | `bool` | `not DEBUG` | Cache merged manifests in memory. Disable in development for hot reloading. |
+| `main_app_name` | `str` | `'main'` | Name used for main/shared manifests that aren't tied to a specific app. |
 | `debug` | `bool` | `False` | Enable detailed logging of manifest loading process. |
 
 ## Development

@@ -49,7 +49,7 @@ class TestManifestLoader:
         manifest = ManifestLoader.get_manifest()
         assert manifest == {}
 
-    @patch("django.apps.apps")
+    @patch("django_multi_manifest_loader.templatetags.manifest.apps")
     @patch("django_multi_manifest_loader.templatetags.manifest.finders.find")
     @patch("builtins.open", new_callable=mock_open, read_data='{"main.js": "main.abc123.js"}')
     def test_get_manifest_single_file(self, mock_file, mock_find, mock_apps):
@@ -62,10 +62,15 @@ class TestManifestLoader:
         ]
 
         manifest = ManifestLoader.get_manifest()
-        assert "main.js" in manifest
-        assert manifest["main.js"] == "main.abc123.js"
 
-    @patch("django.apps.apps")
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
+
+        assert main_app_name in manifest
+        assert "main.js" in manifest[main_app_name]
+        assert manifest[main_app_name]["main.js"] == "main.abc123.js"
+
+    @patch("django_multi_manifest_loader.templatetags.manifest.apps")
     @patch("django_multi_manifest_loader.templatetags.manifest.finders.find")
     @patch("builtins.open")
     def test_get_manifest_multiple_files(self, mock_file_open, mock_find, mock_apps):
@@ -102,12 +107,18 @@ class TestManifestLoader:
         mock_file_open.side_effect = open_side_effect
 
         manifest = ManifestLoader.get_manifest()
-        assert "main.js" in manifest
-        assert "app1.js" in manifest
-        assert manifest["main.js"] == "main.abc123.js"
-        assert manifest["app1.js"] == "app1.def456.js"
 
-    @patch("django.apps.apps")
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
+
+        assert main_app_name in manifest
+        assert "testapp1" in manifest
+        assert "main.js" in manifest[main_app_name]
+        assert "app1.js" in manifest["testapp1"]
+        assert manifest[main_app_name]["main.js"] == "main.abc123.js"
+        assert manifest["testapp1"]["app1.js"] == "app1.def456.js"
+
+    @patch("django_multi_manifest_loader.templatetags.manifest.apps")
     @patch("django_multi_manifest_loader.templatetags.manifest.finders.find")
     @patch("builtins.open", side_effect=OSError("File not found"))
     def test_get_manifest_file_error(self, mock_file, mock_find, mock_apps):
@@ -121,7 +132,7 @@ class TestManifestLoader:
         manifest = ManifestLoader.get_manifest()
         assert manifest == {}
 
-    @patch("django.apps.apps")
+    @patch("django_multi_manifest_loader.templatetags.manifest.apps")
     @patch("django_multi_manifest_loader.templatetags.manifest.finders.find")
     @patch("builtins.open", new_callable=mock_open, read_data="invalid json")
     def test_get_manifest_invalid_json(self, mock_file, mock_find, mock_apps):
@@ -136,7 +147,7 @@ class TestManifestLoader:
         assert manifest == {}
 
     @override_settings(DEBUG=False)
-    @patch("django.apps.apps")
+    @patch("django_multi_manifest_loader.templatetags.manifest.apps")
     @patch("django_multi_manifest_loader.templatetags.manifest.finders.find")
     @patch("builtins.open", new_callable=mock_open, read_data='{"main.js": "main.abc123.js"}')
     def test_caching_enabled_production(self, mock_file, mock_find, mock_apps):
@@ -146,18 +157,21 @@ class TestManifestLoader:
             ["/path/to/manifest.json"],
         ]
 
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
+
         # First call should load manifest
         manifest1 = ManifestLoader.get_manifest()
-        assert manifest1 == {"main.js": "main.abc123.js"}
+        assert manifest1 == {main_app_name: {"main.js": "main.abc123.js"}}
 
         # Second call should use cache (file shouldn't be read again)
         mock_file.reset_mock()
         manifest2 = ManifestLoader.get_manifest()
-        assert manifest2 == {"main.js": "main.abc123.js"}
+        assert manifest2 == {main_app_name: {"main.js": "main.abc123.js"}}
         mock_file.assert_not_called()
 
     @override_settings(DEBUG=True)
-    @patch("django.apps.apps")
+    @patch("django_multi_manifest_loader.templatetags.manifest.apps")
     @patch("django_multi_manifest_loader.templatetags.manifest.finders.find")
     @patch("builtins.open", new_callable=mock_open, read_data='{"main.js": "main.abc123.js"}')
     def test_caching_disabled_debug(self, mock_file, mock_find, mock_apps):
@@ -168,18 +182,21 @@ class TestManifestLoader:
             ["/path/to/manifest.json"],
         ]
 
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
+
         # First call
         manifest1 = ManifestLoader.get_manifest()
-        assert manifest1 == {"main.js": "main.abc123.js"}
+        assert manifest1 == {main_app_name: {"main.js": "main.abc123.js"}}
         call_count_1 = mock_file.call_count
 
         # Second call should reload (caching disabled in DEBUG)
         manifest2 = ManifestLoader.get_manifest()
-        assert manifest2 == {"main.js": "main.abc123.js"}
+        assert manifest2 == {main_app_name: {"main.js": "main.abc123.js"}}
         assert mock_file.call_count > call_count_1
 
     @override_settings(DJANGO_MULTI_MANIFEST_LOADER={"cache": True})
-    @patch("django.apps.apps")
+    @patch("django_multi_manifest_loader.templatetags.manifest.apps")
     @patch("django_multi_manifest_loader.templatetags.manifest.finders.find")
     @patch("builtins.open", new_callable=mock_open, read_data='{"main.js": "main.abc123.js"}')
     def test_caching_forced_enabled(self, mock_file, mock_find, mock_apps):
@@ -189,18 +206,21 @@ class TestManifestLoader:
             ["/path/to/manifest.json"],
         ]
 
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
+
         # First call
         manifest1 = ManifestLoader.get_manifest()
-        assert manifest1 == {"main.js": "main.abc123.js"}
+        assert manifest1 == {main_app_name: {"main.js": "main.abc123.js"}}
 
         # Second call should use cache
         mock_file.reset_mock()
         manifest2 = ManifestLoader.get_manifest()
-        assert manifest2 == {"main.js": "main.abc123.js"}
+        assert manifest2 == {main_app_name: {"main.js": "main.abc123.js"}}
         mock_file.assert_not_called()
 
     @override_settings(DJANGO_MULTI_MANIFEST_LOADER={"cache": False})
-    @patch("django.apps.apps")
+    @patch("django_multi_manifest_loader.templatetags.manifest.apps")
     @patch("django_multi_manifest_loader.templatetags.manifest.finders.find")
     @patch("builtins.open", new_callable=mock_open, read_data='{"main.js": "main.abc123.js"}')
     def test_caching_forced_disabled(self, mock_file, mock_find, mock_apps):

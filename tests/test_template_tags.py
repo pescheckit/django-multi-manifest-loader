@@ -28,9 +28,12 @@ class TestManifestTag:
     @override_settings(STATIC_URL="/static/")
     def test_manifest_tag_found(self, mock_get_manifest):
         """Test manifest tag returns hashed filename when found."""
-        mock_get_manifest.return_value = {"main.js": "js/main.abc123.js"}
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
 
-        result = manifest("main.js")
+        mock_get_manifest.return_value = {main_app_name: {"main.js": "js/main.abc123.js"}}
+
+        result = manifest(Context({}), "main.js")
         assert "main.abc123.js" in result
         assert result.startswith("/static/")
 
@@ -40,35 +43,63 @@ class TestManifestTag:
         """Test manifest tag falls back to original key when not found."""
         mock_get_manifest.return_value = {}
 
-        result = manifest("missing.js")
+        result = manifest(Context({}), "missing.js")
         assert "missing.js" in result
 
     @patch("django_multi_manifest_loader.templatetags.manifest.ManifestLoader.get_manifest")
     @override_settings(STATIC_URL="/static/")
     def test_manifest_tag_absolute_url(self, mock_get_manifest):
         """Test manifest tag handles absolute URLs."""
-        mock_get_manifest.return_value = {"main.js": "https://cdn.example.com/main.abc123.js"}
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
 
-        result = manifest("main.js")
+        mock_get_manifest.return_value = {main_app_name: {"main.js": "https://cdn.example.com/main.abc123.js"}}
+
+        result = manifest(Context({}), "main.js")
         assert result == "https://cdn.example.com/main.abc123.js"
 
     @patch("django_multi_manifest_loader.templatetags.manifest.ManifestLoader.get_manifest")
     @override_settings(STATIC_URL="/static/")
     def test_manifest_tag_absolute_path(self, mock_get_manifest):
         """Test manifest tag handles absolute paths."""
-        mock_get_manifest.return_value = {"main.js": "/absolute/path/main.abc123.js"}
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
 
-        result = manifest("main.js")
+        mock_get_manifest.return_value = {main_app_name: {"main.js": "/absolute/path/main.abc123.js"}}
+
+        result = manifest(Context({}), "main.js")
         assert result == "/absolute/path/main.abc123.js"
 
     @patch("django_multi_manifest_loader.templatetags.manifest.ManifestLoader.get_manifest")
     def test_manifest_tag_in_template(self, mock_get_manifest):
         """Test manifest tag works in Django template."""
-        mock_get_manifest.return_value = {"main.js": "js/main.abc123.js"}
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
+
+        mock_get_manifest.return_value = {main_app_name: {"main.js": "js/main.abc123.js"}}
 
         template = Template('{% load manifest %}{% manifest "main.js" %}')
         result = template.render(Context({}))
         assert "main.abc123.js" in result
+
+    @patch("django_multi_manifest_loader.templatetags.manifest.ManifestLoader.get_manifest")
+    @override_settings(STATIC_URL="/static/")
+    def test_manifest_tag_explicit_app_syntax(self, mock_get_manifest):
+        """Test manifest tag with explicit app parameter."""
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
+
+        mock_get_manifest.return_value = {
+            main_app_name: {"config.js": "js/main-config.abc123.js"},
+            'app1': {"config.js": "app1/js/config.abc123.js"},
+            'app2': {"config.js": "app2/js/config.xyz789.js"}
+        }
+
+        template = Template('{% load manifest %}{% manifest "config.js" app="app1" %}')
+        result = template.render(Context({}))
+        assert "app1/js/config.abc123.js" in result
+        assert "main-config" not in result
+        assert "app2" not in result
 
 
 class TestManifestRawTag:
@@ -77,9 +108,12 @@ class TestManifestRawTag:
     @patch("django_multi_manifest_loader.templatetags.manifest.ManifestLoader.get_manifest")
     def test_manifest_raw_tag_found(self, mock_get_manifest):
         """Test manifest_raw tag returns raw value when found."""
-        mock_get_manifest.return_value = {"main.js": "js/main.abc123.js"}
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
 
-        result = manifest_raw("main.js")
+        mock_get_manifest.return_value = {main_app_name: {"main.js": "js/main.abc123.js"}}
+
+        result = manifest_raw(Context({}), "main.js")
         assert result == "js/main.abc123.js"
 
     @patch("django_multi_manifest_loader.templatetags.manifest.ManifestLoader.get_manifest")
@@ -87,17 +121,36 @@ class TestManifestRawTag:
         """Test manifest_raw tag falls back to original key when not found."""
         mock_get_manifest.return_value = {}
 
-        result = manifest_raw("missing.js")
+        result = manifest_raw(Context({}), "missing.js")
         assert result == "missing.js"
 
     @patch("django_multi_manifest_loader.templatetags.manifest.ManifestLoader.get_manifest")
     def test_manifest_raw_tag_in_template(self, mock_get_manifest):
         """Test manifest_raw tag works in Django template."""
-        mock_get_manifest.return_value = {"main.js": "js/main.abc123.js"}
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
+
+        mock_get_manifest.return_value = {main_app_name: {"main.js": "js/main.abc123.js"}}
 
         template = Template('{% load manifest %}{% manifest_raw "main.js" %}')
         result = template.render(Context({}))
         assert result == "js/main.abc123.js"
+
+    @patch("django_multi_manifest_loader.templatetags.manifest.ManifestLoader.get_manifest")
+    def test_manifest_raw_tag_explicit_app(self, mock_get_manifest):
+        """Test manifest_raw tag with explicit app parameter."""
+        config = ManifestLoader._get_config()
+        main_app_name = config.get('main_app_name', 'main')
+
+        mock_get_manifest.return_value = {
+            main_app_name: {"config.js": "js/main-config.abc123.js"},
+            'app1': {"config.js": "app1/js/config.abc123.js"},
+            'app2': {"config.js": "app2/js/config.xyz789.js"}
+        }
+
+        template = Template('{% load manifest %}{% manifest_raw "config.js" app="app1" %}')
+        result = template.render(Context({}))
+        assert result.strip() == "app1/js/config.abc123.js"
 
 
 class TestManifestIntegration:
@@ -113,7 +166,7 @@ class TestManifestIntegration:
         return manifest_dir
 
     @override_settings(STATICFILES_DIRS=[])
-    @patch("django.apps.apps")
+    @patch("django_multi_manifest_loader.templatetags.manifest.apps")
     @patch("django_multi_manifest_loader.templatetags.manifest.finders.find")
     def test_manifest_real_file(self, mock_find, mock_apps, temp_manifest):
         """Test manifest loading with real file."""
@@ -124,5 +177,5 @@ class TestManifestIntegration:
         ]
 
         ManifestLoader.clear_cache()
-        result = manifest("test.js")
+        result = manifest(Context({}), "test.js")
         assert "test.abc123.js" in result
