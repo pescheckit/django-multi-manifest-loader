@@ -20,7 +20,7 @@ When using webpack with multiple Django packages (like `righttowork-check`, `cri
 
 - **Automatic Namespacing**: Each app's manifest is namespaced, so `config.js` in `package1` doesn't conflict with `config.js` in `package2`
 - **Smart Auto-Detection**: Automatically uses the correct app's assets based on which template is rendering
-- **Explicit Syntax**: Use `app:asset.js` syntax when you need assets from a specific app
+- **Explicit App Parameter**: Use `app='appname'` parameter when you need assets from a specific app
 - **Fallback to Main**: If an asset isn't found in the current app, falls back to the main app's manifest
 
 ## Installation
@@ -78,8 +78,8 @@ The manifest tag automatically detects which app's template is rendering and loa
 <script src="{% manifest 'config.js' %}"></script>
 {# Returns: package2/js/config.xyz789.js #}
 
-{# Explicit app syntax - use assets from another app #}
-<script src="{% manifest 'dashboard:main.js' %}"></script>
+{# Explicit app parameter - use assets from another app #}
+<script src="{% manifest 'main.js' app='dashboard' %}"></script>
 {# Always returns dashboard's main.js #}
 
 {# If not found in current app, falls back to main app #}
@@ -96,7 +96,7 @@ The loader searches for manifest files in all installed Django apps and namespac
 4. **Resolution**:
    - First tries the current app's manifest
    - Falls back to the main app if not found
-   - Supports explicit `app:key` syntax for cross-app asset references
+   - Supports explicit `app='appname'` parameter for cross-app asset references
 
 **Result**: No naming collisions! Each app's `config.js` is kept separate.
 
