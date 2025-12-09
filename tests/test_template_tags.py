@@ -29,7 +29,7 @@ class TestManifestTag:
     def test_manifest_tag_found(self, mock_get_manifest):
         """Test manifest tag returns hashed filename when found."""
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         mock_get_manifest.return_value = {main_app_name: {"main.js": "js/main.abc123.js"}}
 
@@ -51,9 +51,11 @@ class TestManifestTag:
     def test_manifest_tag_absolute_url(self, mock_get_manifest):
         """Test manifest tag handles absolute URLs."""
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
-        mock_get_manifest.return_value = {main_app_name: {"main.js": "https://cdn.example.com/main.abc123.js"}}
+        mock_get_manifest.return_value = {
+            main_app_name: {"main.js": "https://cdn.example.com/main.abc123.js"}
+        }
 
         result = manifest(Context({}), "main.js")
         assert result == "https://cdn.example.com/main.abc123.js"
@@ -63,9 +65,11 @@ class TestManifestTag:
     def test_manifest_tag_absolute_path(self, mock_get_manifest):
         """Test manifest tag handles absolute paths."""
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
-        mock_get_manifest.return_value = {main_app_name: {"main.js": "/absolute/path/main.abc123.js"}}
+        mock_get_manifest.return_value = {
+            main_app_name: {"main.js": "/absolute/path/main.abc123.js"}
+        }
 
         result = manifest(Context({}), "main.js")
         assert result == "/absolute/path/main.abc123.js"
@@ -74,7 +78,7 @@ class TestManifestTag:
     def test_manifest_tag_in_template(self, mock_get_manifest):
         """Test manifest tag works in Django template."""
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         mock_get_manifest.return_value = {main_app_name: {"main.js": "js/main.abc123.js"}}
 
@@ -87,12 +91,12 @@ class TestManifestTag:
     def test_manifest_tag_explicit_app_syntax(self, mock_get_manifest):
         """Test manifest tag with explicit app parameter."""
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         mock_get_manifest.return_value = {
             main_app_name: {"config.js": "js/main-config.abc123.js"},
-            'app1': {"config.js": "app1/js/config.abc123.js"},
-            'app2': {"config.js": "app2/js/config.xyz789.js"}
+            "app1": {"config.js": "app1/js/config.abc123.js"},
+            "app2": {"config.js": "app2/js/config.xyz789.js"},
         }
 
         template = Template('{% load manifest %}{% manifest "config.js" app="app1" %}')
@@ -109,7 +113,7 @@ class TestManifestRawTag:
     def test_manifest_raw_tag_found(self, mock_get_manifest):
         """Test manifest_raw tag returns raw value when found."""
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         mock_get_manifest.return_value = {main_app_name: {"main.js": "js/main.abc123.js"}}
 
@@ -128,7 +132,7 @@ class TestManifestRawTag:
     def test_manifest_raw_tag_in_template(self, mock_get_manifest):
         """Test manifest_raw tag works in Django template."""
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         mock_get_manifest.return_value = {main_app_name: {"main.js": "js/main.abc123.js"}}
 
@@ -140,12 +144,12 @@ class TestManifestRawTag:
     def test_manifest_raw_tag_explicit_app(self, mock_get_manifest):
         """Test manifest_raw tag with explicit app parameter."""
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         mock_get_manifest.return_value = {
             main_app_name: {"config.js": "js/main-config.abc123.js"},
-            'app1': {"config.js": "app1/js/config.abc123.js"},
-            'app2': {"config.js": "app2/js/config.xyz789.js"}
+            "app1": {"config.js": "app1/js/config.abc123.js"},
+            "app2": {"config.js": "app2/js/config.xyz789.js"},
         }
 
         template = Template('{% load manifest %}{% manifest_raw "config.js" app="app1" %}')

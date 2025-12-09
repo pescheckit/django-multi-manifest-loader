@@ -93,9 +93,7 @@ class ManifestLoader:
                 with open(manifest_path) as f:
                     data = json.load(f)
                     if debug:
-                        logger.info(
-                            f"[django-multi-manifest-loader] Loaded {len(data)} entries"
-                        )
+                        logger.info(f"[django-multi-manifest-loader] Loaded {len(data)} entries")
 
                     # Store/merge by app name
                     if app_name in manifests:
@@ -132,11 +130,11 @@ def _detect_app_from_context(context):
     Returns None if detection fails.
     """
     try:
-        if hasattr(context, 'template') and hasattr(context.template, 'origin'):
+        if hasattr(context, "template") and hasattr(context.template, "origin"):
             template_name = context.template.origin.template_name
-            if template_name and '/' in template_name:
+            if template_name and "/" in template_name:
                 # Django convention: "app_name/template.html"
-                return template_name.split('/')[0]
+                return template_name.split("/")[0]
     except Exception:
         pass
     return None
@@ -163,7 +161,7 @@ def manifest(context, asset_key, app=None):
     """
     manifests = ManifestLoader.get_manifest()
     config = ManifestLoader._get_config()
-    main_app_name = config.get('main_app_name', 'main')
+    main_app_name = config.get("main_app_name", "main")
 
     # Handle explicit app parameter
     if app:
@@ -219,7 +217,7 @@ def manifest_raw(context, asset_key, app=None):
     """
     manifests = ManifestLoader.get_manifest()
     config = ManifestLoader._get_config()
-    main_app_name = config.get('main_app_name', 'main')
+    main_app_name = config.get("main_app_name", "main")
 
     # Handle explicit app parameter
     if app:

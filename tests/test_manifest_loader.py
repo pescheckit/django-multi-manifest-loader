@@ -64,7 +64,7 @@ class TestManifestLoader:
         manifest = ManifestLoader.get_manifest()
 
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         assert main_app_name in manifest
         assert "main.js" in manifest[main_app_name]
@@ -109,7 +109,7 @@ class TestManifestLoader:
         manifest = ManifestLoader.get_manifest()
 
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         assert main_app_name in manifest
         assert "testapp1" in manifest
@@ -158,7 +158,7 @@ class TestManifestLoader:
         ]
 
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         # First call should load manifest
         manifest1 = ManifestLoader.get_manifest()
@@ -183,7 +183,7 @@ class TestManifestLoader:
         ]
 
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         # First call
         manifest1 = ManifestLoader.get_manifest()
@@ -207,7 +207,7 @@ class TestManifestLoader:
         ]
 
         config = ManifestLoader._get_config()
-        main_app_name = config.get('main_app_name', 'main')
+        main_app_name = config.get("main_app_name", "main")
 
         # First call
         manifest1 = ManifestLoader.get_manifest()
